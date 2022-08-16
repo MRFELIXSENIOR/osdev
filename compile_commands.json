@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      "/sbin/i386-elf-gcc",
+      "-g",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-c",
+      "-o",
+      "kernel/kernel.o",
+      "kernel/kernel.c"
+    ],
+    "directory": "/home/tpc/codes/osdev",
+    "file": "/home/tpc/codes/osdev/kernel/kernel.c",
+    "output": "/home/tpc/codes/osdev/kernel/kernel.o"
+  }
+]
