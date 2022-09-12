@@ -1,4 +1,4 @@
-print16hex:
+printhex:
     pusha
     mov cx, 0
 
@@ -25,10 +25,7 @@ step2:
 
 end:
     mov bx, HEX
-    call print16
-    call print16_nl
+    call printnl
 
     popa
     ret
-
-HEX: db "0x0000", 0

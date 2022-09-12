@@ -1,22 +1,18 @@
-print16:
+print:
     pusha
 
 prt16_srt:
     mov al, [bx]
     cmp al, 0x0
-    je done
+    je .nl
 
-    mov ah, 0x0
+    mov ah, 0x0e
     int 0x10
 
-    add bx, 1
+    inc bx
     jmp prt16_srt
 
-done:
-    popa
-    ret
-
-print16_nl:
+.nl:
     pusha
 
     mov ah, 0x0e
