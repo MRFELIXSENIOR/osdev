@@ -1,4 +1,4 @@
-LD=i686-elf-ld
+LD=i686-elf-ld.exe
 NASM=nasm
 
 .PHONY=all

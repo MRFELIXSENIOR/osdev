@@ -10,7 +10,6 @@ CC=i686-elf-gcc
 CFLAGS=-ffreestanding -Wall -Wextra -Wno-unused-parameter
 
 LD=i686-elf-ld
-GDB=gdb
 QEMU=qemu-system-x86_64
 
 #TRUNCATE=truncate
@@ -29,10 +28,10 @@ run: build #extend
 build: os.vhd
 
 os.vhd: build/boot.bin build/bootloader.bin
-	dd if=/dev/zero of=$@ bs=512 count=2880
-	mkfs.fat -F 12 -n "HDRV" $@
+	dd if=/dev/zero of=$@ bs=1048576 count=64
+	mkfs.vfat -F 12 -n "HDRV" $@
 	dd if=$< of=$@ conv=notrunc
-	copy -i $@ build/bootloader.bin "::hboot.bin"
+	mcopy -i $@ build/bootloader.bin "::hboot.bin"
 
 build/%.o : %.c ${HEADERS}
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -44,4 +43,4 @@ build/%.bin: %.asm
 	nasm $< -f bin -o $@
 
 clean:
-	rm -rf build/* *.vhd
+	rm build\* *.img

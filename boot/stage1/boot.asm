@@ -25,7 +25,7 @@ section .fsheaders
     _ntflags: dw 0
     _signature: db 0x29
     _vol_id: db 11h, 11h, 11h, 11h
-    _vol_label: db 'HOS DRIVE  '
+    _volume_label: db ' LOCAL DISK'
     _sys_id: db 'FAT12   '
 
 section .entry
@@ -46,6 +46,7 @@ section .entry
     .after:
         mov [_drive_num], dl
 
+        ;   Read Disk
         push es
         mov ah, 08h
         int 13h
@@ -59,26 +60,24 @@ section .entry
         inc dh
         mov [_heads], dh
 
+        ; Root LBA
         mov ax, [_sect_per_FAT]
         mov bl, [_FAT_count]
         xor bh, bh
-        mul bx
-        add ax, [_reserved_sect]
+        mul bx                          ;   ax = 9 * 2
+        add ax, [_reserved_sect]        ;   ax = ax + 1
+        mov bx, ax                      ;   bx = 19
         push ax
 
-        mov bx, ax
-        mov ax, 32
-        mul word [_entry_count]
-        mov cx, 512
-
-        div cx
-        add ax, bx
-        mov [data_start], ax
-
-        mov ax, [_sect_per_FAT]
+        ;calculate Root size
+        mov ax, [_entry_count]
         shl ax, 5
         xor dx, dx
-        div word [_bytes_per_sect]
+        div word [_bytes_per_sect]      ;   ax = 7168 / 512 = 14
+
+        add ax, bx                      ;   ax = 19 + 14 = 33
+        xor bx, bx
+        mov [data_start], ax            ;   Data Region starts at sector 33th
 
         test dx, dx
         jz .next
@@ -102,6 +101,10 @@ section .entry
         pop di
 
         je .load_stage2
+        add di, 32
+        inc bx
+        cmp bx, [_entry_count]
+        jl .search
 
         jmp stage2_notfound
 
@@ -173,7 +176,7 @@ section .entry
         hlt
 
 section .text
-    key_reboot:
+    reboot:
         jmp 0FFFFh:0
 
     .halt:
@@ -184,7 +187,7 @@ section .text
         mov bx, STAGE2_msg
         call printnl
 
-        jmp key_reboot
+        jmp reboot
 
     printnl:
         pusha
@@ -291,15 +294,14 @@ section .text
         mov bx, DISK_ERROR
         call printnl
 
-        jmp key_reboot
+        jmp reboot
 
 section .rodata
-    DISK_ERROR: db 'derror', 0
-    STAGE2_file: db 'HBOOT   BIN'
+    DISK_ERROR: db 'Disk Error', 0
     STAGE2_msg: db 'hboot.bin not found', 0
+    STAGE2_file: db 'HBOOT   BIN'
 
 section .data
-
     STAGE2_LOAD_OFF equ 0x2000
     STAGE2_LOAD_SEG equ 0x0
 
