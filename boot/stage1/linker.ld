@@ -12,9 +12,9 @@ SECTIONS
                 *(.entry)
             }
 
+    .text : { *(.text) }
     .data : { *(.data) }
     .rodata : { *(.rodata) }
-    .text : { *(.text) }
     
     .bios_footer 0x7DFE : { SHORT(0xAA55) }
 

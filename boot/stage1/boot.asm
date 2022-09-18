@@ -127,7 +127,7 @@ section .entry
 
     .load_loop: 
         mov ax, [stage2_cl]
-        
+
         sub ax, 2
         mul byte [_sect_per_clust]
         add ax, [data_start]
@@ -245,16 +245,18 @@ section .text
         ret
         
     disk_read:
-        push eax
+        push ax
         push bx
         push cx
         push dx
+        push di
 
         push cx
         call lba_to_chs
         pop ax
 
         mov ah, 02h
+        mov di, 3
 
     .read:
         pusha
@@ -266,16 +268,21 @@ section .text
         popa
         call disk_reset
 
+        dec di
+        test di, di
+        jnz .read
+
     .fail:
         jmp disk_error
 
     .done:
         popa
 
+        pop di
         pop dx
         pop cx
         pop bx
-        pop eax
+        pop ax
         ret
 
     disk_reset:
@@ -294,9 +301,9 @@ section .text
         jmp reboot
 
 section .rodata
-    DISK_ERROR: db 'Disk Error', 0
-    STAGE2_msg: db 'boot.bin not found', 0
-    STAGE2_file: db 'BOOT    BIN'
+    DISK_ERROR:     db 'Disk Error', 0
+    STAGE2_msg:     db 'boot.bin not found', 0
+    STAGE2_file:    db 'BOOT    BIN'
 
 section .data
     STAGE2_LOAD_OFF equ 0x2000
@@ -304,13 +311,6 @@ section .data
 
     stage2_cl:      dw 0
     data_start:     dw 0
-
-    root_lba:       dw 0
-    root_size:      dw 0
-
-;section .bios_footer
-;    times 510-($-$$) db 0
-;    dw 0xaa55
 
 section .bss
     buf: resb 512
