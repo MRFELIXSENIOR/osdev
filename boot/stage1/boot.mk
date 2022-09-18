@@ -1,5 +1,5 @@
 LD=i686-elf-ld.exe
-NASM=nasm
+NASM=nasm.exe
 
 .PHONY=all
 all: build/boot.bin

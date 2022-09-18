@@ -25,7 +25,7 @@ section .fsheaders
     _ntflags: dw 0
     _signature: db 0x29
     _vol_id: db 11h, 11h, 11h, 11h
-    _volume_label: db ' LOCAL DISK'
+    _volume_label: db 'LOCAL DISK '
     _sys_id: db 'FAT12   '
 
 section .entry
@@ -36,7 +36,7 @@ section .entry
         mov ds, ax
         mov ss, ax
 
-        mov bp, 0x7c00
+        mov bp, 0x9c00
         mov sp, bp
 
         push es
@@ -66,22 +66,24 @@ section .entry
         xor bh, bh
         mul bx                          ;   ax = 9 * 2
         add ax, [_reserved_sect]        ;   ax = ax + 1
+
         mov bx, ax                      ;   bx = 19
-        push ax
+        push ax                         ;   ax = 19
+
+        mov ax, [_entry_count]          ;   ax = 32
+        shl ax, 5                       ;   ax = 32 * 224 = 7168  
+
+        xor dx, dx                      ;   dx: remainder of the division, dx = 0
+        div word [_bytes_per_sect]      ;   ax = ax / 512 = 14      
+        add ax, bx                      ;   ax = ax + bx = 33
+        mov [data_start], ax            ;   data_start = 33
 
         ;calculate Root size
-        mov ax, [_entry_count]
-        shl ax, 5
-        xor dx, dx
-        div word [_bytes_per_sect]      ;   ax = 7168 / 512 = 14
+        sub ax, bx                      ;   ax = 33 - 19
 
-        add ax, bx                      ;   ax = 19 + 14 = 33
-        xor bx, bx
-        mov [data_start], ax            ;   Data Region starts at sector 33th
-
-        test dx, dx
-        jz .next
-        inc ax
+        test dx, dx                     ;   check remainer
+        jz .next                        ;   jump if 0
+        inc ax                          ;   add 1 to ax
 
     .next:
         mov cl, al
@@ -99,8 +101,8 @@ section .entry
         push di
         repe cmpsb
         pop di
-
         je .load_stage2
+
         add di, 32
         inc bx
         cmp bx, [_entry_count]
@@ -125,6 +127,7 @@ section .entry
 
     .load_loop: 
         mov ax, [stage2_cl]
+        
         sub ax, 2
         mul byte [_sect_per_clust]
         add ax, [data_start]
@@ -194,7 +197,7 @@ section .text
 
     .loop:
         mov al, [bx]
-        cmp al, 0x0
+        cmp al, 0
         je .nl
 
         mov ah, 0x0e
@@ -209,6 +212,7 @@ section .text
         mov ah, 0x0e
         mov al, 0x0a
         int 0x10
+
         mov al, 0x0d
         int 0x10
 
@@ -245,14 +249,12 @@ section .text
         push bx
         push cx
         push dx
-        push di
 
         push cx
         call lba_to_chs
         pop ax
 
         mov ah, 02h
-        mov di, 3
 
     .read:
         pusha
@@ -264,17 +266,12 @@ section .text
         popa
         call disk_reset
 
-        dec di
-        test di, di
-        jnz .read
-
     .fail:
         jmp disk_error
 
     .done:
         popa
 
-        pop di
         pop dx
         pop cx
         pop bx
@@ -298,15 +295,22 @@ section .text
 
 section .rodata
     DISK_ERROR: db 'Disk Error', 0
-    STAGE2_msg: db 'hboot.bin not found', 0
-    STAGE2_file: db 'HBOOT   BIN'
+    STAGE2_msg: db 'boot.bin not found', 0
+    STAGE2_file: db 'BOOT    BIN'
 
 section .data
     STAGE2_LOAD_OFF equ 0x2000
     STAGE2_LOAD_SEG equ 0x0
 
-    stage2_cl: dw 0
-    data_start: dw 0
+    stage2_cl:      dw 0
+    data_start:     dw 0
+
+    root_lba:       dw 0
+    root_size:      dw 0
+
+;section .bios_footer
+;    times 510-($-$$) db 0
+;    dw 0xaa55
 
 section .bss
     buf: resb 512
