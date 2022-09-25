@@ -1,4 +1,5 @@
 #include "string.h"
+#include "stdlib.h"
 #include "../driver/colors.h"
 #include "../driver/video.h"
 
@@ -40,6 +41,37 @@ int strcmp(char *s1, char *s2) {
             return 0;
     }
     return s1[i] - s2[i];
+}
+
+char* strchr(char* str, char c) {
+    while (*str) {
+        if (*str == c) 
+            return str;
+
+        str++;
+    }
+
+    return NULL;
+}
+
+char* strcpy(char* src, char* dest) {
+    char* orgD = dest;
+    if (dest == NULL)
+        return NULL;
+
+    if (src == NULL) {
+        *dest = 0;
+        return dest;
+    }
+
+    while (*src) {
+        *dest = *src;
+        src++;
+        dest++;
+    }
+
+    *dest = 0;
+    return orgD;
 }
 
 void backspace(char *s) { s[strlen(s) - 1] = 0; }

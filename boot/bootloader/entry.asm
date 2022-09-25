@@ -1,37 +1,43 @@
 bits 16
 
-global main
-main:
-    sti
-    mov ah, 0x0e
-    mov al, 0x75
-    int 0x10 
 
-msg: db "booting", 0
+extern bootmain
 
-printnl:
-    push ax
-    push bx
+section .entry
+    global main
+    main:
+        mov si, msg
+        call printnl
 
-.loop:
-    mov al, [bx]
-    cmp al, 0           ; verify if next character is null?
-    je .nl
+        call bootmain
+        
+        cli
+        hlt
 
-    mov ah, 0x0e        ; call bios interrupt
-    int 0x10
+section .text
+    printnl:
+        pusha
 
-    inc bx
-    jmp .loop
+    .loop:
+        lodsb               ; loads next character in al
+        cmp al, 0           ; verify if next character is null?
+        je .done
 
-.nl:
-    mov ah, 0x0e
-    mov al, 0x0a
-    int 0x10
+        mov ah, 0x0E        ; call bios interrupt
+        int 10h
 
-    mov al, 0x0d
-    int 0x10
+        jmp .loop
 
-    pop bx
-    pop ax
-    ret
+    .done:
+        mov ah, 0x0e
+        mov al, 0x0a
+        int 10h
+
+        mov al, 0x0d
+        int 10h
+
+        popa
+        ret
+
+section .data
+    msg: db 'boot.bin Loaded!, jmped to the Bootloader', 0

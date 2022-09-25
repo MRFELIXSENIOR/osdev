@@ -8,12 +8,12 @@ section .fsheaders
     ;BDB
     _oem: db 'MSWIN4.1'
     _bytes_per_sect:    dw 512
-    _sect_per_clust:    db 2
+    _sect_per_clust:    db 1
     _reserved_sect:     dw 1
     _FAT_count:         db 2
-    _entry_count:       dw 0x0E0
+    _entry_count:       dw 224
     _total_sect:        dw 2880
-    _media:             db 0x0F0
+    _media:             db 0xF0
     _sect_per_FAT:      dw 9
     _sect_per_track:    dw 18
     _heads:             dw 2
@@ -46,14 +46,14 @@ section .entry
     .after:
         mov [_drive_num], dl
 
-        ;   Read Disk
+        ;   Read Disk Parameter
         push es
         mov ah, 08h
         int 13h
         jc disk_error
         pop es
 
-        and cl, 0x3f
+        and cl, 0x3F
         xor ch, ch
         mov [_sect_per_track], cx
 
@@ -66,28 +66,27 @@ section .entry
         xor bh, bh
         mul bx                          ;   ax = 9 * 2
         add ax, [_reserved_sect]        ;   ax = ax + 1
-
+        
         mov bx, ax                      ;   bx = 19
-        push ax                         ;   ax = 19
 
-        mov ax, [_entry_count]          ;   ax = 32
-        shl ax, 5                       ;   ax = 32 * 224 = 7168  
+        mov ax, [_entry_count]          ;   ax = 512
+        mov cx, 32              
+        mul cx                          ;   ax = 32 * 512 = 16384
 
         xor dx, dx                      ;   dx: remainder of the division, dx = 0
-        div word [_bytes_per_sect]      ;   ax = ax / 512 = 14      
-        add ax, bx                      ;   ax = ax + bx = 33
-        mov [data_start], ax            ;   data_start = 33
+        div word [_bytes_per_sect]      ;   ax = ax / 512 = 32    
+        add ax, bx                      ;   ax = ax + bx = 51
+        mov [data_start], ax            ;   data_start = 51
 
-        ;calculate Root size
-        sub ax, bx                      ;   ax = 33 - 19
-
+        sub ax, bx                      ;   ax = 51 - 19 = 32
+        
         test dx, dx                     ;   check remainer
         jz .next                        ;   jump if 0
-        inc ax                          ;   add 1 to ax
+        inc ax                          ;   ax = 32 + 1 = 33
 
     .next:
         mov cl, al
-        pop ax
+        mov ax, bx
         mov dl, [_drive_num]
         mov bx, buf
         call disk_read
@@ -157,10 +156,10 @@ section .entry
         jmp .next_cluster
 
     .even:
-        and ax, 0x0fff
+        and ax, START_OF_FILE
 
     .next_cluster:
-        cmp ax, 0x0ff8
+        cmp ax, END_OF_FILE
         jae .read_finish
 
         mov [stage2_cl], ax
@@ -306,8 +305,11 @@ section .rodata
     STAGE2_file:    db 'BOOT    BIN'
 
 section .data
-    STAGE2_LOAD_OFF equ 0x2000
-    STAGE2_LOAD_SEG equ 0x0
+    STAGE2_LOAD_SEG equ 0x500
+    STAGE2_LOAD_OFF equ 0x0
+
+    START_OF_FILE equ 0xFFF
+    END_OF_FILE equ 0xFF8
 
     stage2_cl:      dw 0
     data_start:     dw 0
