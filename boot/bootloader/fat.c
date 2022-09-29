@@ -3,22 +3,42 @@
 #include "../../libc/memory.h"
 #include "../../libc/stdlib.h"
 #include "../../libc/string.h"
+#include "../../libc/ctype.h"
 #include "memdefs.h"
 
-#define SECTOR_SIZE 512
-#define MAX_NAME_SIZE 11
-#define MAX_PATH_SIZE 256
-#define MAX_HANDLES 16
+#define SECTOR_SIZE     512
+#define MAX_PATH_SIZE   256
+#define MAX_HANDLES     16
 #define ROOT_DIR_HANDLE -1
 
-#define START_OF_FILE 0x0FFF
-#define END_OF_FILE 0x0FF8
+#define START_OF_FILE   0x0FFF
+#define END_OF_FILE     0x0FF8
+
+#define MAX_FILE_NAME   11
 
 dword FAT_Cl2LBA(dword Cluster);
 FAT_File *FAT_OpenEntry(DISK *disk, FAT_DirectoryEntry *entry);
 dword FAT_NextCluster(dword currentCluster);
 bool FAT_FindFile(DISK *disk, FAT_File *file, char *name,
                   FAT_DirectoryEntry *output);
+
+typedef struct {
+    byte Buffer[SECTOR_SIZE];
+    FAT_File File;
+    bool Opened;
+    dword FirstCluster;
+    dword CurrentCluster;
+    dword CurrentSectorInCluster;
+} FAT_FileData;
+
+typedef struct {
+    union {
+        FAT_BootSector bootSector;
+        byte BootSectorBuffer[SECTOR_SIZE];
+    } bs;
+    FAT_FileData RootDir;
+    FAT_FileData OpenedFile[MAX_HANDLES];
+} FAT_Data;
 
 static FAT_Data *data;
 static byte *fat = NULL;
@@ -45,33 +65,16 @@ typedef struct {
     byte _Reserved;
     byte Signature;
     dword VolumeId;       // serial number, value doesn't matter
-    byte VolumeLabel[11]; // 11 bytes, padded with spaces
+    byte VolumeLabel[MAX_FILE_NAME]; // MAX_FILE_NAME bytes, padded with spaces
     byte SystemId[8];
 
     // ... we don't care about code ...
 
 } __attribute__((packed)) FAT_BootSector;
 
-typedef struct {
-    byte Buffer[SECTOR_SIZE];
-    FAT_File File;
-    bool Opened;
-    dword FirstCluster;
-    dword CurrentCluster;
-    dword CurrentSectorInCluster;
-} FAT_FileData;
-
-typedef struct {
-    union {
-        FAT_BootSector bootSector;
-        byte bootSectorByte[SECTOR_SIZE];
-    } bs;
-    FAT_FileData RootDir;
-    FAT_FileData OpenedFile[MAX_HANDLES];
-} FAT_Data;
 
 bool FAT_ReadBootSector(DISK *disk) {
-    return DISK_ReadSectors(disk, 0, 1, data->bs.bootSectorByte);
+    return DISK_ReadSectors(disk, 0, 1, data->bs.BootSectorBuffer);
 }
 
 bool FAT_ReadFAT(DISK *disk) {
@@ -114,6 +117,7 @@ bool FAT_Init(DISK *disk) {
     data->RootDir.CurrentCluster = rootLba;
     data->RootDir.CurrentSectorInCluster = 0;
 
+    //Read Root Directory
     if (!DISK_ReadSectors(disk, rootLba, 1, data->RootDir.Buffer)) {
         puts("FAT Error: Read Root Failed!\n");
         return false;
@@ -175,12 +179,47 @@ dword FAT_NextCluster(dword currentCluster) {
     }
 }
 
-bool FAT_FindFile(DISK *disk, FAT_File *file, char *name, FAT_DirectoryEntry *output) {
+char* FAT_ToFATName(char* name) {
     char fatName[12];
+    int nameSize = 0;
+
+    memset(fatName, ' ', sizeof(fatName)); //Fill it with spaces
+    fatName[MAX_FILE_NAME] = 0;
+
+    char* exten = strchr(name, '.');
+    nameSize = (exten == NULL)? MAX_FILE_NAME : MAX_FILE_NAME - sizeof(exten);
+
+    if (nameSize <= 0) {
+        puts("Invalid name, Exceeded MAX_FILE_NAME characters");
+        return NULL;
+    }
+
+    for (int i = 0; i < nameSize; i++)
+        fatName[i] = toupper(name[i]); //file.txt -> FILE_______
+
+    char* writeExt;
+    int lengthToSkip = (nameSize - strcut(fatName, ' ')) - sizeof(exten);
+    writeExt = fatName + lengthToSkip;
+
+    for (int i = 0; i < sizeof(exten); i++)
+        writeExt[i] = exten[i];
+
+    return fatName;
+}
+
+bool FAT_FindFile(DISK *disk, FAT_File *file, char *name, FAT_DirectoryEntry *output) {
     FAT_DirectoryEntry entry;
 
-    memset(fatName, ' ', sizeof(fatName));
-    
+    char* fatName = FAT_ToFATName(name);
+
+    while(FAT_ReadEntry(disk, file, &entry)) {
+        if (memcmp(fatName, entry.Name, MAX_FILE_NAME)) {
+            *output = entry;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 FAT_File *FAT_Open(DISK *disk, char *path) {

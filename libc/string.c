@@ -80,3 +80,11 @@ void strapp(char *s, char c) {
     s[len] = c;
     s[len + 1] = 0;
 }
+
+int strcut(char* str, char chr) {
+    int i = 0;
+    while (str[i] != chr) {
+        i++;
+    }
+    return i;
+}
