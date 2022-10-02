@@ -14,7 +14,7 @@
 #define START_OF_FILE   0x0FFF
 #define END_OF_FILE     0x0FF8
 
-#define MAX_FILE_NAME   11
+#define MAX_FAT_NAME   11
 
 dword FAT_Cl2LBA(dword Cluster);
 FAT_File *FAT_OpenEntry(DISK *disk, FAT_DirectoryEntry *entry);
@@ -43,6 +43,7 @@ typedef struct {
 static FAT_Data *data;
 static byte *fat = NULL;
 static dword dataStart;
+static char currentFileName[12];
 
 typedef struct {
     byte BootJumpInstruction[3];
@@ -65,7 +66,7 @@ typedef struct {
     byte _Reserved;
     byte Signature;
     dword VolumeId;       // serial number, value doesn't matter
-    byte VolumeLabel[MAX_FILE_NAME]; // MAX_FILE_NAME bytes, padded with spaces
+    byte VolumeLabel[MAX_FAT_NAME]; // MAX_FILE_NAME bytes, padded with spaces
     byte SystemId[8];
 
     // ... we don't care about code ...
@@ -180,40 +181,40 @@ dword FAT_NextCluster(dword currentCluster) {
 }
 
 char* FAT_ToFATName(char* name) {
-    char fatName[12];
-    int nameSize = 0;
+	if (strlen(name) > 11) {
+		puts("invalid name size");
+		return NULL;
+	}
 
-    memset(fatName, ' ', sizeof(fatName)); //Fill it with spaces
-    fatName[MAX_FILE_NAME] = 0;
+	int nameSize = 0;
+	memset(currentFileName, ' ', MAX_FAT_NAME);
+	currentFileName[MAX_FAT_NAME - 1] = '\0';
 
-    char* exten = strchr(name, '.');
-    nameSize = (exten == NULL)? MAX_FILE_NAME : MAX_FILE_NAME - sizeof(exten);
+	const char* ext = strchr(name, '.');
+	nameSize = strlen(name) - strlen(ext) - 1;
 
-    if (nameSize <= 0) {
-        puts("Invalid name, Exceeded MAX_FILE_NAME characters");
-        return NULL;
-    }
+	for (int i = 0; i < nameSize + 1; i++) {
+		currentFileName[i] = toupper(name[i]);
+	}
 
-    for (int i = 0; i < nameSize; i++)
-        fatName[i] = toupper(name[i]); //file.txt -> FILE_______
+	const char* firstSpace = strchr(currentFileName, ' ');
+	int startIndex = stridx(currentFileName, ' ');
 
-    char* writeExt;
-    int lengthToSkip = (nameSize - strcut(fatName, ' ')) - sizeof(exten);
-    writeExt = fatName + lengthToSkip;
+	for (int i = strlen(firstSpace) - strlen(ext) + startIndex + 1, j = 1; i < (strlen(firstSpace) - strlen(ext) + startIndex + strlen(ext)), j < strlen(ext); i++, j++) {
+		currentFileName[i] = toupper(ext[j]);
+	}
+	currentFileName[11] = '\0';
 
-    for (int i = 0; i < sizeof(exten); i++)
-        writeExt[i] = exten[i];
-
-    return fatName;
+	return currentFileName;
 }
 
 bool FAT_FindFile(DISK *disk, FAT_File *file, char *name, FAT_DirectoryEntry *output) {
     FAT_DirectoryEntry entry;
 
-    char* fatName = FAT_ToFATName(name);
+    char fatName[12] = FAT_ToFATName(name);
 
     while(FAT_ReadEntry(disk, file, &entry)) {
-        if (memcmp(fatName, entry.Name, MAX_FILE_NAME)) {
+        if (memcmp(fatName, entry.Name, MAX_FAT_NAME)) {
             *output = entry;
             return true;
         }

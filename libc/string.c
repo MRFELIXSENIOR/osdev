@@ -43,7 +43,7 @@ int strcmp(char *s1, char *s2) {
     return s1[i] - s2[i];
 }
 
-char* strchr(char* str, char c) {
+const char* strchr(char* str, char c) {
     while (*str) {
         if (*str == c) 
             return str;
