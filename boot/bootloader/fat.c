@@ -180,41 +180,41 @@ dword FAT_NextCluster(dword currentCluster) {
     }
 }
 
-char* FAT_ToFATName(char* name) {
+void FAT_ToFATName(char* name) {
 	if (strlen(name) > 11) {
 		puts("invalid name size");
 		return NULL;
 	}
 
-	int nameSize = 0;
 	memset(currentFileName, ' ', MAX_FAT_NAME);
-	currentFileName[MAX_FAT_NAME - 1] = '\0';
+	currentFileName[MAX_FAT_NAME] = '\0';
 
 	const char* ext = strchr(name, '.');
-	nameSize = strlen(name) - strlen(ext) - 1;
-
-	for (int i = 0; i < nameSize + 1; i++) {
+	for (int i = 0; i < (strlen(name) - strlen(ext)); i++) {
 		currentFileName[i] = toupper(name[i]);
-	}
+    }
+
+    if (ext == NULL) {
+        currentFileName[11] = '\0';
+        return;
+    }
 
 	const char* firstSpace = strchr(currentFileName, ' ');
-	int startIndex = stridx(currentFileName, ' ');
+	int startIndex = chridx(currentFileName, ' ');
 
-	for (int i = strlen(firstSpace) - strlen(ext) + startIndex + 1, j = 1; i < (strlen(firstSpace) - strlen(ext) + startIndex + strlen(ext)), j < strlen(ext); i++, j++) {
+	for (int i = strlen(firstSpace) + 1, j = 1; i < (strlen(firstSpace) + startIndex), j < strlen(ext); i++, j++) {
 		currentFileName[i] = toupper(ext[j]);
 	}
 	currentFileName[11] = '\0';
-
-	return currentFileName;
 }
 
 bool FAT_FindFile(DISK *disk, FAT_File *file, char *name, FAT_DirectoryEntry *output) {
     FAT_DirectoryEntry entry;
 
-    char fatName[12] = FAT_ToFATName(name);
+    FAT_ToFATName(name);
 
     while(FAT_ReadEntry(disk, file, &entry)) {
-        if (memcmp(fatName, entry.Name, MAX_FAT_NAME)) {
+        if (memcmp(currentFileName, entry.Name, MAX_FAT_NAME)) {
             *output = entry;
             return true;
         }
@@ -224,7 +224,6 @@ bool FAT_FindFile(DISK *disk, FAT_File *file, char *name, FAT_DirectoryEntry *ou
 }
 
 FAT_File *FAT_Open(DISK *disk, char *path) {
-
     char name[MAX_PATH_SIZE+1];
     if (*path == '/')
         path++;
