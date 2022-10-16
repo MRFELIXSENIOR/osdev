@@ -23,15 +23,19 @@ OBJ=$(SOURCES:.c=.o cpu/int.o)
 all:
 	@$(MAKE) -f boot/stage1/boot.mk
 	@$(MAKE) -f boot/bootloader/bootloader.mk
-	@$(MAKE) build
+	@$(MAKE) putfile
 
 run: build #extend
 	$(QEMU) $(QEMU_FLAG) os.vhd
 
-.PHONY=build
-build: os.vhd
+.PHONY=putfile
+putfile: build
+	mcopy -i os.img test/file.txt "::dir/file.txt"
 
-os.vhd: build/boot.bin build/bootloader.bin
+.PHONY=build
+build: os.img
+
+os.img: build/boot.bin build/bootloader.bin
 	dd if=/dev/zero of=$@ bs=512 count=2880
 	mkfs.fat -F $(FAT) -n "GATO" $@
 	dd if=$< of=$@ conv=notrunc
@@ -47,4 +51,4 @@ build/%.bin: %.asm
 	nasm $< -f bin -o $@
 
 clean:
-	rm build/* *.vhd
+	rm build/* *.img

@@ -2,17 +2,17 @@
 #include "../driver/video.h"
 #include "../boot/bootloader/bios.h"
 
-void puts(byte* str) {
-    #ifdef __GTOS_KERNEL_BIOS_MODE__
-        while (*str) {
-            BIOS_PUTC(*str);
-            str++;
-        }
-        BIOS_PUTC('\r');
-    #elif __GTOS_KERNEL_PROTECTED_MODE__
-        while (*str) {
-            GPUTC(*str);
-            str++;
-        }
+void putc(char c) {
+    #ifdef __GTOS_BIOS_MODE__
+        BIOS_PUTC(c);
+    #elif __GTOS_PROT_MODE__
+        GPUTC(c);
     #endif
+}
+
+void puts(char* str) {
+    while (*str) {
+        putc(*str);
+        str++;
+    }
 }

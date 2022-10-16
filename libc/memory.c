@@ -6,8 +6,8 @@ void memcpy(char *src, char *dest, unsigned int nbytes) {
     }
 }
 
-void memset(unsigned char *dest, unsigned char val, unsigned int length) {
-    unsigned char *temp = dest;
+void memset(char *dest, char val, unsigned int length) {
+    char *temp = dest;
     for (; length != 0; length--)
         *temp++ = val;
 }

@@ -1,16 +1,24 @@
 bits 16
 
-
-extern bootmain
+[extern bootStart]
 
 section .entry
-    global main
-    main:
+    global bootloaderStart
+    bootloaderStart:
+        cli
+        mov ax, ds
+        mov ss, ax
+        mov sp, 0
+        mov bp, sp
+        sti
+
         mov si, msg
         call printnl
 
-        call bootmain
-        
+        xor dh, dh
+        push dx
+        call bootStart
+
         cli
         hlt
 
@@ -40,4 +48,4 @@ section .text
         ret
 
 section .data
-    msg: db 'boot.bin Loaded!, jmped to the Bootloader', 0
+    msg: db '[INFO] boot.bin Loaded', 0

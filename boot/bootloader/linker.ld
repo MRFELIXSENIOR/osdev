@@ -1,4 +1,4 @@
-ENTRY(main)
+ENTRY(bootloaderStart)
 OUTPUT_FORMAT("binary")
 
 SECTIONS

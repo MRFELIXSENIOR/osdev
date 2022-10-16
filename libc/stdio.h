@@ -3,6 +3,7 @@
 
 #include "stdint.h"
 
-void puts(byte* str);
+void puts(char* str);
+void putc(char c);
 
 #endif

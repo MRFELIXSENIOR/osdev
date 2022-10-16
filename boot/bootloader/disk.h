@@ -16,5 +16,4 @@ bool DISK_ReadSectors(DISK* disk, dword lba, byte sectors, byte* dataOut);
 
 void DISK_lba2chs(DISK* disk, dword lba, word* cylOut, word* secOut, word* headOut);
 
-
 #endif
