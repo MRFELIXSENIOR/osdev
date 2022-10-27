@@ -1,42 +1,46 @@
 bits 16
 
 section .fsjump
-    jmp short vbrmain
+    jmp short main
     nop
 
 section .fsheaders
     ;BDB
-    _oem: db 'MSWIN4.1'
-    _bytes_per_sect:    dw 512
-    _sect_per_clust:    db 1
-    _reserved_sect:     dw 1
-    _FAT_count:         db 2
-    _entry_count:       dw 224
-    _total_sect:        dw 2880
-    _media:             db 0xF0
-    _sect_per_FAT:      dw 9
-    _sect_per_track:    dw 18
-    _heads:             dw 2
-    _hidden_sect:       dd 0
-    _large_sect_count:  dd 0
+    bdb_oem:                db "gatOS   "
+    bdbBytePerSector:       dw 512
+    bdbSectorsPerCluster:   db 4
+    bdbReserved:            dw 4
+    bdbFATCount:            db 2
+    bdbEntriesCount:        dw 512
+    bdbTotalSector:         dw 49152
+    bdbMediaDesc:           db 0xF8
+    bdbSectorsPerFAT:       dw 48
+    bdbSectorsPerTrack:     dw 32
+    bdbHeadsCount:          dw 2
+    bdbHiddenSectors:       dq 0
+    bdbLargeSectorsCount:   dq 0
 
     ;EBR
-    _drive_num: db 0
-    _ntflags: dw 0
-    _signature: db 0x29
-    _vol_id: db 11h, 11h, 11h, 11h
-    _volume_label: db 'LOCAL DISK '
-    _sys_id: db 'FAT12   '
+    DriveNumber:            db 0x80
+    NTFlag:                 db 0
+    EBRSignature:           db 0x29
+    EBRVolumeID:            dq 0x20202020
+    EBRVolumeLabel:         db "gatOS drive"
+    EBRSystemID:            db "FAT16   "
 
 section .entry
-    global vbrmain
+    global main
+    main:
+        mov ax, PART_ENTRY_SEG
+        mov es, ax
+        mov di, PART_ENTRY_OFF
+        mov cx, 16
+        rep movsb
 
-    vbrmain:
-        xor ax, ax
+        mov ax, 0
         mov ds, ax
         mov ss, ax
-
-        mov bp, 0x9c00
+        mov bp, 0x7c00
         mov sp, bp
 
         push es
@@ -44,129 +48,55 @@ section .entry
         retf
 
     .after:
-        mov [_drive_num], dl
+        mov [DriveNumber], dl
 
-        ;   Read Disk Parameter
-        push es
-        mov ah, 08h
+        mov si, msg
+        call printnl
+
+        mov ah, 0x41
+        mov bx, 0x55AA
+        stc
         int 13h
-        jc disk_error
-        pop es
+        jc .no_lba_addressing_extension
 
-        and cl, 0x3F
-        xor ch, ch
-        mov [_sect_per_track], cx
+        mov byte [lba_extension], 1
+        jmp .after_check
 
-        inc dh
-        mov [_heads], dh
+    .no_lba_addressing_extension:
+        mov byte [lba_extension], 0
 
-        ; Root LBA
-        mov ax, [_sect_per_FAT]
-        mov bl, [_FAT_count]
-        xor bh, bh
-        mul bx                          ;   ax = 9 * 2
-        add ax, [_reserved_sect]        ;   ax = ax + 1
-        
-        mov bx, ax                      ;   bx = 19
+    .after_check:
+        mov si, stage2_location
 
-        mov ax, [_entry_count]          ;   ax = 512
-        mov cx, 32              
-        mul cx                          ;   ax = 32 * 512 = 16384
-
-        xor dx, dx                      ;   dx: remainder of the division, dx = 0
-        div word [_bytes_per_sect]      ;   ax = ax / 512 = 32    
-        add ax, bx                      ;   ax = ax + bx = 51
-        mov [data_start], ax            ;   data_start = 51
-
-        sub ax, bx                      ;   ax = 51 - 19 = 32
-        
-        test dx, dx                     ;   check remainer
-        jz .next                        ;   jump if 0
-        inc ax                          ;   ax = 32 + 1 = 33
-
-    .next:
-        mov cl, al
-        mov ax, bx
-        mov dl, [_drive_num]
-        mov bx, buf
-        call disk_read
-
-        xor bx, bx
-        mov di, buf
-
-    .search:
-        mov si, STAGE2_file
-        mov cx, 11
-        push di
-        repe cmpsb
-        pop di
-        je .load_stage2
-
-        add di, 32
-        inc bx
-        cmp bx, [_entry_count]
-        jl .search
-
-        jmp stage2_notfound
-
-    .load_stage2:
-        mov ax, [di + 26]
-        mov [stage2_cl], ax
-
-        mov ax, [_reserved_sect]
-        mov bx, buf
-        mov cl, [_sect_per_FAT]
-        mov dl, [_drive_num]
-        call disk_read
-
-        mov bx, STAGE2_LOAD_SEG
-        mov es, bx
+        mov ax, STAGE2_LOAD_SEG
+        mov es, ax
 
         mov bx, STAGE2_LOAD_OFF
 
-    .load_loop: 
-        mov ax, [stage2_cl]
+    .load_loop:
+        mov eax, [si]
+        add si, 4
+        mov cl, [si]
+        inc si
 
-        sub ax, 2
-        mul byte [_sect_per_clust]
-        add ax, [data_start]
+        cmp eax, 0
+        je .read_finish
 
-        mov cl, 1
-        mov dl, [_drive_num]
         call disk_read
 
-        add bx, [_bytes_per_sect]
+        xor ch, ch
+        shl cx, 5
+        mov di, es
+        add di, cx
+        mov es, di
 
-        mov ax, [stage2_cl]
-        mov cx, 3
-        mul cx
-
-        mov cx, 2
-        div cx
-
-        mov si, buf
-        add si, ax
-        mov ax, [ds:si]
-
-        or dx, dx
-        jz .even
-
-    .odd:
-        shr ax, 4
-        jmp .next_cluster
-
-    .even:
-        and ax, START_OF_FILE
-
-    .next_cluster:
-        cmp ax, END_OF_FILE
-        jae .read_finish
-
-        mov [stage2_cl], ax
         jmp .load_loop
 
     .read_finish:
-        mov dl, [_drive_num]
+        mov dl, [DriveNumber]
+
+        mov si, PART_ENTRY_OFF
+        mov di, PART_ENTRY_SEG
 
         mov ax, STAGE2_LOAD_SEG
         mov ds, ax
@@ -178,44 +108,34 @@ section .entry
         hlt
 
 section .text
-    reboot:
-        jmp 0FFFFh:0
-
-    .halt:
-        cli
-        hlt
-
     stage2_notfound:
-        mov bx, STAGE2_msg
+        mov si, STAGE2_msg
         call printnl
 
-        jmp reboot
-
     printnl:
-        pusha
+        push si
+        push ax
 
     .loop:
-        mov al, [bx]
+        lodsb
         cmp al, 0
         je .nl
 
-        mov ah, 0x0e
-        int 0x10
+        mov ah, 0Eh
+        int 10h
 
-        inc bx
         jmp .loop
 
     .nl:
-        pusha
-
-        mov ah, 0x0e
-        mov al, 0x0a
+        mov ah, 0Eh
+        mov al, 0Ah
         int 0x10
 
-        mov al, 0x0d
+        mov al, 0Dh
         int 0x10
 
-        popa
+        pop ax
+        pop si
         ret
 
     lba_to_chs:
@@ -224,14 +144,14 @@ section .text
         push dx
 
         xor dx, dx                          ; dx = 0
-        div word [_sect_per_track]          ; ax = LBA / SectorsPerTrack
+        div word [bdbSectorsPerTrack]          ; ax = LBA / SectorsPerTrack
                                             ; dx = LBA % SectorsPerTrack
 
         inc dx                              ; dx = (LBA % SectorsPerTrack + 1) = sector
         mov cx, dx                          ; cx = sector
 
         xor dx, dx                          ; dx = 0
-        div word [_heads]                   ; ax = (LBA / SectorsPerTrack) / Heads = cylinder
+        div word [bdbHeadsCount]                   ; ax = (LBA / SectorsPerTrack) / Heads = cylinder
                                             ; dx = (LBA / SectorsPerTrack) % Heads = head
         mov dh, dl                          ; dh = head
         mov ch, al                          ; ch = cylinder (lower 8 bits)
@@ -244,17 +164,33 @@ section .text
         ret
         
     disk_read:
-        push ax
+        push eax
         push bx
         push cx
         push dx
         push di
+        push si
 
+        cmp byte [lba_extension], 1
+        jne .no_extensions
+
+        mov [extensions_dap.lba], eax
+        mov [extensions_dap.numSector], cl
+        mov [extensions_dap.segment], es
+        mov [extensions_dap.offset], bx
+
+        mov ah, 0x42
+        mov si, extensions_dap
+        
+        mov di, 3
+        jmp .read
+
+    .no_extensions:
         push cx
         call lba_to_chs
         pop ax
 
-        mov ah, 02h
+        mov ah, 0x02
         mov di, 3
 
     .read:
@@ -277,11 +213,12 @@ section .text
     .done:
         popa
 
+        pop si
         pop di
         pop dx
         pop cx
         pop bx
-        pop ax
+        pop eax
         ret
 
     disk_reset:
@@ -294,25 +231,36 @@ section .text
         ret
 
     disk_error:
-        mov bx, DISK_ERROR
+        mov si, DISK_ERROR
         call printnl
 
-        jmp reboot
-
 section .rodata
+    msg:            db 'Booting', 0
     DISK_ERROR:     db 'Disk Error', 0
     STAGE2_msg:     db 'boot.bin not found', 0
     STAGE2_file:    db 'BOOT    BIN'
 
 section .data
-    STAGE2_LOAD_SEG equ 0x500
-    STAGE2_LOAD_OFF equ 0x0
+    STAGE2_LOAD_SEG equ 0x0
+    STAGE2_LOAD_OFF equ 0x500
 
-    START_OF_FILE equ 0xFFF
-    END_OF_FILE equ 0xFF8
+    PART_ENTRY_SEG  equ 0x2000
+    PART_ENTRY_OFF  equ 0x0
 
-    stage2_cl:      dw 0
-    data_start:     dw 0
+    START_OF_FILE   equ 0xFFFF
+    END_OF_FILE     equ 0xFFF8
+    
+    lba_extension: db 0
+    extensions_dap:     ;   Disk-Address-Packet Structure
+        .size:      db 16
+        .reserved:  db 0
+        .numSector: dw 0
+        .offset:    dw 0
+        .segment:   dw 0
+        .lba:       dq 0
+
+    global stage2_location
+    stage2_location:times 30 db 0
 
 section .bss
-    buf: resb 512
+    buf:            resb 512

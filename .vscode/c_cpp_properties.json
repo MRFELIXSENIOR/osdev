@@ -1,20 +1,19 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "gatOS_dev",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "compilerPath": "C:\\msys64\\mingw64\\bin\\gcc.exe",
-            "cStandard": "gnu17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "gcc-x64",
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "defines": [],
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "C:\\i686-elf-binutils\\bin\\i686-elf-gcc.exe",
+            "cStandard": "c99",
+            "cppStandard": "c++03",
+            "intelliSenseMode": "${default}",
+            "compilerArgs": [
+                "-ffreestanding"
+            ]
         }
     ],
     "version": 4

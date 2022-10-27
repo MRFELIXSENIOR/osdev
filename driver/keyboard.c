@@ -6,11 +6,12 @@
 #include "../libc/string.h"
 
 #define released(k) HGET_RELEASED_SCANCODE(k)
+#define NULLC '\0'
 
 static char KEY_BUFFER[1024];
-static BOOL BACKSPACE_ENABLED = TRUE;
-static BOOL SHIFT_ENABLED = FALSE;
-static BOOL CAPSLOCK_ENABLED = FALSE;
+static bool BACKSPACE_ENABLED = true;
+static bool SHIFT_ENABLED = false;
+static bool CAPSLOCK_ENABLED = false;
 
 #define SCANCODE_MAX 0x58
 const char *scancodeNames[] = {
@@ -30,28 +31,30 @@ const char *scancodeNames[] = {
     "F7",         "F8",       "F9",       "F10",         "Numlock",
     "ScrollLock", "Keypad_7", "Keypad_8", "Keypad_9",    "Keypad_Minus",
     "Keypad_4",   "Keypad_5", "Keypad_6", "Keypad_Plus", "Keypad_1",
-    "Keypad_2",   "Keypad_3", "Keypad_0", "Keypad_Dot",  "NULL",
-    "NULL",       "NULL",     "F11",      "F12"};
+    "Keypad_2",   "Keypad_3", "Keypad_0", "Keypad_Dot",  "NULLC",
+    "NULLC",      "NULLC",    "F11",      "F12"};
 
 static const char scancodeAscii[] = {
-    NULL, NULL, '1',  '2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  '0',
-    '-',  '=',  NULL, NULL, 'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',
-    'o',  'p',  '[',  ']',  NULL, NULL, 'a',  's',  'd',  'f',  'g',  'h',
-    'j',  'k',  'l',  ';',  '\'', '`',  NULL, '\\', 'Z',  'x',  'c',  'v',
-    'b',  'n',  'm',  ',',  '.',  '/',  NULL, '*',  NULL, ' ',  NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    '7',  '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',  '2',  '3',  '0',
-    '.',  NULL, NULL, NULL, NULL, NULL};
+    NULLC, NULLC, '1',   '2',   '3',   '4',   '5',   '6',   '7',   '8',
+    '9',   '0',   '-',   '=',   NULLC, NULLC, 'q',   'w',   'e',   'r',
+    't',   'y',   'u',   'i',   'o',   'p',   '[',   ']',   NULLC, NULLC,
+    'a',   's',   'd',   'f',   'g',   'h',   'j',   'k',   'l',   ';',
+    '\'',  '`',   NULLC, '\\',  'Z',   'x',   'c',   'v',   'b',   'n',
+    'm',   ',',   '.',   '/',   NULLC, '*',   NULLC, ' ',   NULLC, NULLC,
+    NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC,
+    NULLC, NULLC, '7',   '8',   '9',   '-',   '4',   '5',   '6',   '+',
+    '1',   '2',   '3',   '0',   '.',   NULLC, NULLC, NULLC, NULLC, NULLC};
 
 static const char scancodeAsciiCapital[] = {
-    NULL, NULL, '!',  '@',  '#',  '$',  '%',  '^',  '&',  '*',  '(',  ')',
-    '_',  '+',  NULL, NULL, 'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',
-    'O',  'P',  '{',  '}',  NULL, NULL, 'A',  'S',  'D',  'F',  'G',  'H',
-    'J',  'K',  'L',  ':',  '"',  '~',  NULL, NULL, 'Z',  'X',  'C',  'V',
-    'B',  'N',  'M',  '<',  '>',  '?',  NULL, NULL, NULL, ' ',  NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL};
+    NULLC, NULLC, '!',   '@',   '#',   '$',   '%',   '^',   '&',   '*',
+    '(',   ')',   '_',   '+',   NULLC, NULLC, 'Q',   'W',   'E',   'R',
+    'T',   'Y',   'U',   'I',   'O',   'P',   '{',   '}',   NULLC, NULLC,
+    'A',   'S',   'D',   'F',   'G',   'H',   'J',   'K',   'L',   ':',
+    '"',   '~',   NULLC, NULLC, 'Z',   'X',   'C',   'V',   'B',   'N',
+    'M',   '<',   '>',   '?',   NULLC, NULLC, NULLC, ' ',   NULLC, NULLC,
+    NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC,
+    NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC,
+    NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC, NULLC};
 
 static void KEYBOARD_CALLBACK(registers r) {
     byte scancode = HPORT_GETBYTE(0x60);
@@ -59,7 +62,6 @@ static void KEYBOARD_CALLBACK(registers r) {
     if (scancode > SCANCODE_MAX)
         return;
 
-    /*
     if (scancode == HSC_BACKSPACE) {
         backspace(KEY_BUFFER);
         HSCR_PUTBACKSPACE();
@@ -73,26 +75,25 @@ static void KEYBOARD_CALLBACK(registers r) {
         strapp(KEY_BUFFER, c);
         puts(str);
     }
-    */
 
     switch (scancode) {
     case HSC_ENTER: {
-        // puts("\n");
+        puts("\n");
         KEY_BUFFER[0] = 0;
         break;
     }
 
     case HSC_BACKSPACE: {
-        // if (BACKSPACE_ENABLED != TRUE)
-        // break;
+        if (BACKSPACE_ENABLED != true)
+            break;
         backspace(KEY_BUFFER);
-        // HSCR_PUTBACKSPACE();
+            HSCR_PUTBACKSPACE();
         break;
     }
 
     default: {
         char c;
-        if ((SHIFT_ENABLED | CAPSLOCK_ENABLED) == TRUE) {
+        if ((SHIFT_ENABLED | CAPSLOCK_ENABLED) == true) {
             c = scancodeAsciiCapital[scancode];
         } else {
             c = scancodeAscii[scancode];
@@ -100,18 +101,19 @@ static void KEYBOARD_CALLBACK(registers r) {
 
         char str[2] = {c, 0};
         strapp(KEY_BUFFER, c);
-        // puts(str);
+            puts(str);
     }
     }
 }
 
-void HGET_INPUT(char **buffer) {
+void HGET_INPUT(void **buffer) {
     if (!buffer)
         return;
+        
     buffer = &KEY_BUFFER;
 }
 
-void SETBACKSPACE_ENABLED(BOOL boolean) { BACKSPACE_ENABLED = boolean; }
+void SETBACKSPACE_ENABLED(bool boolean) { BACKSPACE_ENABLED = boolean; }
 
 byte HGET_RELEASED_SCANCODE(byte pressedKey) { return (pressedKey + 0x80); }
 

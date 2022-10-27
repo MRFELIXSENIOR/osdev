@@ -1,9 +1,7 @@
-#ifndef __NFOS__BIOS__
-#define __NFOS__BIOS__
+#ifndef __GTOS_BIOS_DEF_H
+#define __GTOS_BIOS_DEF_H
 
-#define __GTOS_BIOS_MODE__
-
-#include "../../libc/stdint.h"
+#include "libc/stdint.h"
 #define __cdecl __attribute__((cdecl))
 
 bool __cdecl BIOS_GETDISK_PARAM(byte driveNumber, 
@@ -22,5 +20,9 @@ bool __cdecl BIOS_DISK_READ(byte driveNumber,
                             void* buffer);
 
 void __cdecl BIOS_PUTC(byte c);
+void __cdecl BIOS_PUTS(byte* str);
+
+#define puts(s) BIOS_PUTS(s)
+#define putc(c) BIOS_PUTC(c)
 
 #endif

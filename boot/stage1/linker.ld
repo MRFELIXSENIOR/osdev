@@ -1,10 +1,9 @@
-ENTRY(vbrmain)
+ENTRY(main)
 OUTPUT_FORMAT("binary")
-phys = 0x7C00;
 
 SECTIONS
 {
-    . = phys;
+    . = 0x7C00;
     .fsjump : { *(.fsjump) }
     .fsheaders : { *(.fsheaders) }
 

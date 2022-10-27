@@ -1,8 +1,9 @@
 #ifndef __BOOT_FAT_DRIVER__
 #define __BOOT_FAT_DRIVER__
 
-#include "../../libc/stdint.h"
+#include "libc/stdint.h"
 #include "disk.h"
+#include "sys/mbr.h"
 
 typedef struct {
     byte Name[11];
@@ -37,10 +38,10 @@ typedef enum {
                               FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 } FAT_Attribute;
 
-bool FAT_Init(DISK* disk);
-FAT_File* FAT_Open(DISK* disk, char* path);
+bool FAT_Init(Partition* part);
+FAT_File* FAT_Open(Partition* part, char* path);
 void FAT_Close(FAT_File* file);
-dword FAT_Read(DISK* disk, FAT_File* file, dword byteCount, void* bufferOut);
-bool FAT_ReadEntry(DISK* disk, FAT_File* file, FAT_DirectoryEntry* entry);
+dword FAT_Read(Partition* part, FAT_File* file, dword byteCount, void* bufferOut);
+bool FAT_ReadEntry(Partition* part, FAT_File* file, FAT_DirectoryEntry* entry);
 
 #endif

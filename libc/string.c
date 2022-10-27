@@ -1,7 +1,6 @@
 #include "string.h"
-#include "stdlib.h"
-#include "../driver/colors.h"
-#include "../driver/video.h"
+
+#define NULL (void*)0
 
 int strlen(const char *string) {
     int len = 0;

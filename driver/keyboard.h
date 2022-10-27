@@ -96,7 +96,7 @@ typedef enum {
 byte HGET_RELEASED_SCANCODE(byte pressedKey);
 
 void HKEYBOARD_INIT();
-void SETBACKSPACE_ENABLED(BOOL boolean);
-void HGET_INPUT(char **buffer);
+void SETBACKSPACE_ENABLED(bool boolean);
+void HGET_INPUT(void **buffer);
 
 #endif

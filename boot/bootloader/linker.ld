@@ -1,12 +1,15 @@
-ENTRY(bootloaderStart)
+ENTRY(main)
 OUTPUT_FORMAT("binary")
 
-SECTIONS
+SECTIONS 
 {
-    .entry : { __entry_start = .;
-                *(.entry)
-            }
+    . = 0x00000500;
 
-    .text : { *(.text) }
-    .data : { *(.data) }
+    .entry  : { __entry_start   = .;     *(.entry)  }
+    .text   : { __text_start    = .;     *(.text)   }
+    .data   : { __data_start    = .;     *(.data)   }
+    .rodata : { __rodata_start  = .;     *(.rodata) }
+    .bss    : { __bss_start     = .;     *(.bss)    }
+
+    __end = .;
 }

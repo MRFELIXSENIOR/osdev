@@ -5,7 +5,7 @@
 #include "../libc/stdio.h"
 */
 
-#include "../libc/stdio.h"
+#include "../boot/bootloader/bios.h"
 
 void kstart() {
     puts("[INFO] Kernel Loaded!\n");    

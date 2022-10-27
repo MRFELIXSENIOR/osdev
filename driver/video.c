@@ -1,8 +1,16 @@
 #include "video.h"
-#include "../libc/stdint.h"
+#include "libc/stdint.h"
 #include "ports.h"
 
-/*
+#define VID_ADDR        0xb8000
+#define MAX_ROW         640
+#define MAX_COL         480
+
+#define PORT_VIDCTRL    0x3d4
+#define PORT_VIDDATA    0x3d5
+
+int HSCR_PUTCHAR(char c, int col, int row, byte color);
+
 void HSCR_PUTS(char *message, int col, int row, byte color) {
     int position = 0;
     if (col >= 0 && row >= 0) {
@@ -13,13 +21,12 @@ void HSCR_PUTS(char *message, int col, int row, byte color) {
         col = HSCR_GETCOL(position);
     }
 
-    int i = 0;
-    while (i != strlen(message)) {
-        position = HSCR_PUTCHAR(message[i], col, row, color);
+    while (*message) {
+        position = HSCR_PUTCHAR(*message, col, row, color);
 
         row = HSCR_GETROW(position);
         col = HSCR_GETCOL(position);
-        i++;
+        message++;
     }
 }
 
@@ -115,7 +122,8 @@ int HSCR_GETROW(int pos) { return pos / (2 * MAX_COL); }
 int HSCR_GETCOL(int pos) {
     return (pos - (HSCR_GETROW(pos) * 2 * MAX_COL)) / 2;
 }
-*/
+
+/*
 void HscrPutPixel(int x, int y, byte color) {
     byte *pos = (byte *)VGA_ADDR + 320 * y + x;
     *pos = color;
@@ -124,3 +132,4 @@ void HscrPutPixel(int x, int y, byte color) {
 byte HscrGetColorFromRGB(byte r, byte g, byte b) {
     return ((r << 16) + (g << 8) + b);
 }
+*/

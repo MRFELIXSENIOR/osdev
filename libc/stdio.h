@@ -1,9 +1,9 @@
 #ifndef __HSTDIO_LIBC__
 #define __HSTDIO_LIBC__
 
-#include "stdint.h"
+#include "driver/video.h"
 
-void puts(char* str);
-void putc(char c);
+#define puts(s) HSCR_PRINT(s)
+#define putc(c) HSCR_PRINT(c)
 
 #endif

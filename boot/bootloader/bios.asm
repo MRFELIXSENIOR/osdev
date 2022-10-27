@@ -1,3 +1,5 @@
+%include "boot/bootloader/macro.asm"
+
 global BIOS_GETDISK_PARAM
 BIOS_GETDISK_PARAM:
     push bp
@@ -112,9 +114,34 @@ BIOS_PUTC:
     push bp
     mov bp, sp
 
-    mov ah, 0Eh
-    mov al, [bp + 4]
+    mov ah, 0Eh 
+    mov al, [bp + 3]
     int 10h
+
+    mov sp, bp
+    pop bp
+    ret
+
+global BIOS_PUTS
+BIOS_PUTS:
+    push bp
+    mov bp, sp
+
+    push bx
+
+.loop:
+    mov bx, [ds:bp]
+    test bx, bx
+    jz .finish
+
+    push bx
+    call BIOS_PUTC
+
+    add bx, 1
+    jmp .loop
+
+.finish:
+    pop bx
 
     mov sp, bp
     pop bp

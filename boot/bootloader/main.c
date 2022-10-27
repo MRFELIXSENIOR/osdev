@@ -1,24 +1,27 @@
 #include "main.h"
+#include "libc/stdio.h"
 
 void* data = (void*)0x00500200;
 
 typedef void (*kernelMain)();
 
-void __cdecl bootStart(word bootDrive) {
+void __cdecl bootStart(word bootDrive, void* partitionEntry) {
+    puts("[INFO] bootStart called!\n");
     DISK disk;
     if (!DISK_Init(&disk, bootDrive)) {
         puts("DISK: Failed To Initialize, Potential Disk Corruption\n");
         goto loop;
     }
 
-    DISK_ReadSectors(&disk, 19, 1, data);
+    Partition part;
+    MBRCheckPartition(&part, &disk, partitionEntry);
 
-    if (!FAT_Init(&disk)) {
-        puts("DISK: Failed To Initialize FAT\n");
+    if (!FAT_Init(&part)) {
+        puts("Partition: Failed To Initialize FAT\n");
         goto loop;
     }
 
-    FAT_File* fileData = FAT_Open(&disk, '/');
+    FAT_File* fileData = FAT_Open(&disk, "/");
     FAT_DirectoryEntry entry;
     int i = 0;
     while(FAT_ReadEntry(&disk, fileData, &entry) && i++ < 5) {
@@ -32,7 +35,7 @@ void __cdecl bootStart(word bootDrive) {
 
     char buffer[144];
     dword read;
-    fileData = FAT_Open(&disk, '/dir/file.txt');
+    fileData = FAT_Open(&disk, "/file.txt");
     while((read = FAT_Read(&disk, fileData, 144, buffer))) {
         for (dword i = 0; i < read; i++) {
             if (buffer[i] == '\n')
@@ -43,5 +46,5 @@ void __cdecl bootStart(word bootDrive) {
     FAT_Close(fileData);
 
 loop:
-    while (!reboot) {}
+    for (;;);
 }
