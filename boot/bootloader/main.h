@@ -5,6 +5,6 @@
 #include "bios.h"
 #include "disk.h"
 #include "fat.h"
-#include "sys/mbr.h"
+#include "mbr.h"
 
 #endif

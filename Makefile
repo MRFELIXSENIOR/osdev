@@ -5,41 +5,33 @@
 include scripts/def.mk
 
 DISK_SIZE=31457280
-
-.PHONY=all
 all: ${BUILD_DIR}/$(OS_IMAGE)
 
 run: $(BUILD_DIR)/$(OS_IMAGE)
 	@$(QEMU) $(QEMU_FLAG)
 
-.PHONY=$(BUILD_DIR)
+$(LIB_DIR)/libc.a:
+	@$(MAKE) -f libc/buildlibc.mk
 
-$(BUILD_DIR)/$(OS_IMAGE): bootloader sys
-	@./scripts/create_disk_image.sh $@ ${DISK_SIZE}
+$(LIB_DIR)/libsys.a:
+	@$(MAKE) -f sys/buildsys.mk
 
-bootloader: $(BUILD_DIR)/boot.bin $(BUILD_DIR)/bootloader.bin
-
-$(LIB_DIR)/libc.a: always
-	@echo ${fgBLUE_COL}"Compiling"$@"..."
-	@$(MAKE) -C libc
-
-sys: $(LIB_DIR)/libsys.a
-
-$(LIB_DIR)/libsys.a: always
-	@echo ${fgBLUE_COL}"Compiling"$@"..."
-	@$(MAKE) -C sys/buildsys.mk
-
-$(BUILD_DIR)/boot.bin: always
-	@echo ${fgBLUE_COL}"Compiling"$@"..."
-	@$(MAKE) -f boot/stage1/boot.mk
-
-$(BUILD_DIR)/bootloader.bin: always
-	@echo ${fgBLUE_COL}"Compiling"$@"..."
+$(BUILD_DIR)/bootloader.bin:
 	@$(MAKE) -f boot/bootloader/bootloader.mk
 
-always:
-	@mkdir -p $(BUILD_DIR)
+$(BUILD_DIR)/boot.bin:
+	@$(MAKE) -f boot/stage1/boot.mk
+
+bootloader: $(BUILD_DIR)/bootloader.bin $(BUILD_DIR)/boot.bin
+	@$(MAKE) -f boot/bootloader/bootloader.mk
+
+libc: $(LIB_DIR)/libc.a
+sys: $(LIB_DIR)/libsys.a
+
+.PHONY=bootloader sys libc all run
+$(BUILD_DIR)/$(OS_IMAGE): libc sys bootloader
+	@./scripts/create_disk_image.sh $@ ${DISK_SIZE}
 
 clean:
-	@echo "${fgBLUE_COL}Cleaning..."
+	@echo "${fgGREEN_COL}Cleaning..."
 	@rm -rf $(BUILD_DIR)/*

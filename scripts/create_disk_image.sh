@@ -20,14 +20,19 @@ STAGE2_LOCATION=480
 DISK_TOTAL_SECTORS=$(( (${DISK_SIZE} + 511) / 512 ))
 
 DISK_PART1_BEGIN=2048
-DISK_PART1_END=$(( DISK_TOTAL_SECTOR - 1 ))
+DISK_PART1_END=$(( ${DISK_TOTAL_SECTORS} - 1 ))
 
-echo "${CYAN}Generating Hard Disk Image ${YELLOW}${TARGET} (${DISK_TOTAL_SECTORS} sectors) ($((${DISK_SIZE} / 1024)) KiB)"
-dd if=/dev/zero of=$TARGET bs=512 count=${DISK_TOTAL_SECTOR}
+echo "${YELLOW}"
+echo "Total Sectors: ${DISK_TOTAL_SECTORS}"
+echo "Size: $((${DISK_SIZE} / 1048576)) MiB"
+echo "Partition 1 Start: ${DISK_PART1_BEGIN}th sector"
+echo "Partition 1 End: ${DISK_PART1_END}th sector"
+echo "${DEFAULT}"
 
-echo "${CYAN}Creating Partitions"
+echo "${GREEN}Generating Hard Disk Image ${YELLOW}${TARGET}${WHITE}"
+dd if=/dev/zero of=$TARGET bs=512 count=${DISK_TOTAL_SECTORS} status=none
+
+echo "${GREEN}Creating Partitions${WHITE}"
 parted -s $TARGET mklabel msdos
 parted -s $TARGET mkpart primary ${DISK_PART1_BEGIN}s ${DISK_PART1_END}s
 parted -s $TARGET set 1 boot on
-
-STAGE2_SIZE=$(stat -c%s ${BUILD_DIR}/stage2.bin)

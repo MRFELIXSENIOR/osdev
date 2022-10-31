@@ -33,17 +33,13 @@ typedef struct {
     dword HiddenSectors;
     dword LargeSectorCount;
 
-    // extended boot record
     byte DriveNumber;
     byte _Reserved;
     byte Signature;
-    dword VolumeId;                 // serial number, value doesn't matter
-    byte VolumeLabel[MAX_FAT_NAME]; // MAX_FILE_NAME bytes, padded with spaces
+    dword VolumeId;
+    byte VolumeLabel[MAX_FAT_NAME];
     byte SystemId[8];
-
-    // ... we don't care about code ...
-
-} __attribute__((packed)) FAT_BootSector;
+} __attribute__((packed)) sysBootSector;
 
 dword FAT_Cl2LBA(dword Cluster);
 FAT_File *FAT_OpenEntry(Partition *part, FAT_DirectoryEntry *entry);
@@ -62,7 +58,7 @@ typedef struct {
 
 typedef struct {
     union {
-        FAT_BootSector bootSector;
+        sysBootSector bootSector;
         byte BootSectorBuffer[SECTOR_SIZE];
     } bs;
     FAT_FileData RootDir;

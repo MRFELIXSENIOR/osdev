@@ -1,5 +1,4 @@
 #include "main.h"
-#include "libc/stdio.h"
 
 void* data = (void*)0x00500200;
 

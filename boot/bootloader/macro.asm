@@ -1,4 +1,4 @@
-%macro  __ENTER_REAL_MODE 0
+%macro enter_rmode 0
     bits 32
     jmp word 18h:.pmode16
 
@@ -19,7 +19,7 @@
     sti
 %endmacro
 
-%macro  __ENTER_PROTECTED_MODE32 0
+%macro enter_pmode 0
     cli
     
     mov eax, cr0

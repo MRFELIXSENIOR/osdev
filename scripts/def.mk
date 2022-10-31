@@ -1,22 +1,22 @@
-export OS_IMAGE	= os.hdd
+export OS_IMAGE		= os.hdd
 
-export FATType 	= 16
-export QEMU		= qemu-system-x86_64.exe
-export QEMU_FLAG= -drive file=$(OS_IMAGE),format=raw
+export FATType 		= 16
+export QEMU			= qemu-system-x86_64.exe
+export QEMU_FLAG	= -drive file=$(OS_IMAGE),format=raw
 
-export CFLAGS 	= -std=c99 -g -ffreestanding -I$(SOURCE) -L
-export ASM		= nasm.exe
-export CC		= i686-elf-gcc.exe
-export CXX		= i686-elf-g++.exe
-export LD		= i686-elf-ld.exe
-export AR		= i686-elf-ar.exe
+export CFLAGS 		= -std=c99 -g -ffreestanding -I$(SOURCE_DIR) -L$(LIB_DIR)
+export ASM			= nasm.exe
+export CC			= i686-elf-gcc.exe
+export CXX			= i686-elf-g++.exe
+export LD			= i686-elf-ld.exe
+export AR			= i686-elf-ar.exe
 
-export SOURCE_DIR 	= $(abspath .)
-export LIB_DIR		= $(abspath lib)
-export LIBC_DIR		= $(abspath libc)
-export BOOT_DIR		= $(abspath boot)
-export DRIVER_DIR	= $(abspath driver)
-export BUILD_DIR 	= $(abspath build)
+export SOURCE_DIR 	= .
+export LIB_DIR		= lib
+export LIBC_DIR		= libc
+export BOOT_DIR		= boot
+export DRIVER_DIR	= driver
+export BUILD_DIR 	= build
 
 export fgBLACK_COL	= "$$(tput setaf 0)"
 export fgRED_COL	= "$$(tput setaf 1)"

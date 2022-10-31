@@ -3,7 +3,7 @@
 
 #include "libc/stdint.h"
 #include "disk.h"
-#include "sys/mbr.h"
+#include "mbr.h"
 
 typedef struct {
     byte Name[11];
