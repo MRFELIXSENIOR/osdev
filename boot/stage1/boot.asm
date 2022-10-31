@@ -31,12 +31,6 @@ section .fsheaders
 section .entry
     global main
     main:
-        mov ax, PART_ENTRY_SEG
-        mov es, ax
-        mov di, PART_ENTRY_OFF
-        mov cx, 16
-        rep movsb
-
         mov ax, 0
         mov ds, ax
         mov ss, ax
@@ -57,12 +51,14 @@ section .entry
         mov bx, 0x55AA
         stc
         int 13h
-        jc .no_lba_addressing_extension
+        jc .no_extension
+        cmp bx, 0xAA55
+        jne .no_extension
 
         mov byte [lba_extension], 1
         jmp .after_check
 
-    .no_lba_addressing_extension:
+    .no_extension:
         mov byte [lba_extension], 0
 
     .after_check:
@@ -252,8 +248,8 @@ section .data
     
     lba_extension: db 0
     extensions_dap:     ;   Disk-Address-Packet Structure
-        .size:      db 16
-        .reserved:  db 0
+        .size:      db 10h
+                    db 0
         .numSector: dw 0
         .offset:    dw 0
         .segment:   dw 0

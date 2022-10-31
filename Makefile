@@ -2,63 +2,44 @@
 # $< = first dependency
 # $^ = all dependencies
 
-FAT=16
-OS_IMAGE=os.hdd
+include scripts/def.mk
 
-QEMU=qemu-system-x86_64.exe
-QEMU_FLAG=-drive file=$(OS_IMAGE),format=raw
-
-CC=i686-elf-gcc.exe
-CFLAGS=-g -ffreestanding -I.
-
-LD=i686-elf-ld.exe
-
-SOURCES=$(wildcard kernel/*.c driver/*.c cpu/*.c)
-HEADERS=$(wildcard kernel/*.h driver/*.h cpu/*.h)
-ASMSOURCES=$(wildcard cpu/*.asm)
-#OBJ=$(SOURCES:.c=build/.o cpu/int.o)
-
-OBJ=$(patsubst %.c,build/kessential/%.o,$(SOURCES))
-ASMOBJ=$(patsubst %.asm,build/kessential/%.o,$(ASMSOURCES))
+DISK_SIZE=31457280
 
 .PHONY=all
-all: buildkessential
-	@$(MAKE) -f libc/buildlibc.mk
-	@$(MAKE) -f sys/buildsys.mk
+all: ${BUILD_DIR}/$(OS_IMAGE)
+
+run: $(BUILD_DIR)/$(OS_IMAGE)
+	@$(QEMU) $(QEMU_FLAG)
+
+.PHONY=$(BUILD_DIR)
+
+$(BUILD_DIR)/$(OS_IMAGE): bootloader sys
+	@./scripts/create_disk_image.sh $@ ${DISK_SIZE}
+
+bootloader: $(BUILD_DIR)/boot.bin $(BUILD_DIR)/bootloader.bin
+
+$(LIB_DIR)/libc.a: always
+	@echo ${fgBLUE_COL}"Compiling"$@"..."
+	@$(MAKE) -C libc
+
+sys: $(LIB_DIR)/libsys.a
+
+$(LIB_DIR)/libsys.a: always
+	@echo ${fgBLUE_COL}"Compiling"$@"..."
+	@$(MAKE) -C sys/buildsys.mk
+
+$(BUILD_DIR)/boot.bin: always
+	@echo ${fgBLUE_COL}"Compiling"$@"..."
 	@$(MAKE) -f boot/stage1/boot.mk
+
+$(BUILD_DIR)/bootloader.bin: always
+	@echo ${fgBLUE_COL}"Compiling"$@"..."
 	@$(MAKE) -f boot/bootloader/bootloader.mk
-	@$(MAKE) putfile
-	@$(MAKE) run
 
-run: os #extend
-	$(QEMU) $(QEMU_FLAG)
-
-.PHONY=putfile
-putfile: os
-	mcopy -i $(OS_IMAGE) test/file.txt ::
-
-.PHONY=build
-os: $(OS_IMAGE)
-
-$(OS_IMAGE): build/boot.bin build/bootloader.bin
-	dd if=/dev/zero of=$@ bs=512 count=49152
-	mkfs.fat -F $(FAT) -n "GATO" $@
-	dd if=$< of=$@ conv=notrunc
-	mcopy -i $@ build/bootloader.bin ::
-
-buildkessential: ${OBJ} ${ASMOBJ}
-
-build/kessential/%.o : %.c ${HEADERS}
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-build/kessential/%.o: %.asm
-	@mkdir -p $(@D)
-	nasm $< -f elf -o $@
-
-build/%.bin: %.asm
-	@mkdir -p $(@D)
-	nasm $< -f bin -o $@
+always:
+	@mkdir -p $(BUILD_DIR)
 
 clean:
-	rm -rf build/*
+	@echo "${fgBLUE_COL}Cleaning..."
+	@rm -rf $(BUILD_DIR)/*

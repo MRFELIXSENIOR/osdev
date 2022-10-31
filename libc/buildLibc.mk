@@ -1,19 +1,16 @@
-AR=i686-elf-ar.exe
-
-CC=i686-elf-gcc.exe
-CFLAGS=-g -ffreestanding -I.
+include scripts/def.mk
 
 SOURCES=$(wildcard libc/*.c)
 HEADERS=$(wildcard libc/*.h)
 
-OBJ=$(patsubst %.c,build/%.o,$(SOURCES))
+OBJ=$(patsubst %.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
 .PHONY=all
-all: lib/libgtlibc.a
+all: $(LIB_DIR)/libc.a
 
-lib/libgtlibc.a: ${OBJ}
+$(LIB_DIR)/libc.a: ${OBJ}
 	$(AR) rvs $@ $^
 
-build/%.o: %.c ${HEADERS}
+$(BUILD_DIR)/%.o: %.c ${HEADERS}
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
