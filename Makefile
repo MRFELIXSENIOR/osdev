@@ -2,9 +2,11 @@
 # $< = first dependency
 # $^ = all dependencies
 
+OS=WSL
+
 include scripts/def.mk
 
-DISK_SIZE=31457280
+DISK_SIZE=26214400
 all: ${BUILD_DIR}/$(OS_IMAGE)
 
 run: $(BUILD_DIR)/$(OS_IMAGE)
@@ -30,8 +32,8 @@ sys: $(LIB_DIR)/libsys.a
 
 .PHONY=bootloader sys libc all run
 $(BUILD_DIR)/$(OS_IMAGE): libc sys bootloader
-	@./scripts/create_disk_image.sh $@ ${DISK_SIZE}
+	@./scripts/create_disk_image.sh $@ ${DISK_SIZE} ${OS}
 
 clean:
-	@echo "${fgGREEN_COL}Cleaning..."
+	@echo "${fgCYAN_COL}Cleaning..."
 	@rm -rf $(BUILD_DIR)/*

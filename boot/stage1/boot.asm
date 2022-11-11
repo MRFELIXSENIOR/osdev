@@ -12,11 +12,11 @@ section .fsheaders
     bdbReserved:            dw 4
     bdbFATCount:            db 2
     bdbEntriesCount:        dw 512
-    bdbTotalSector:         dw 49152
+    bdbTotalSector:         dw 51200
     bdbMediaDesc:           db 0xF8
-    bdbSectorsPerFAT:       dw 48
-    bdbSectorsPerTrack:     dw 32
-    bdbHeadsCount:          dw 2
+    bdbSectorsPerFAT:       dw 50
+    bdbSectorsPerTrack:     dw 31
+    bdbHeadsCount:          dw 15
     bdbHiddenSectors:       dq 0
     bdbLargeSectorsCount:   dq 0
 
@@ -62,19 +62,20 @@ section .entry
         mov byte [lba_extension], 0
 
     .after_check:
-        mov si, stage2_location
+        mov si, table_location
 
         mov ax, STAGE2_LOAD_SEG
         mov es, ax
 
         mov bx, STAGE2_LOAD_OFF
 
-    .load_loop:
+    .read_table:
         mov eax, [si]
-        add si, 4
+        add si, 3
         mov cl, [si]
         inc si
 
+    .read_entry:
         cmp eax, 0
         je .read_finish
 
@@ -86,7 +87,7 @@ section .entry
         add di, cx
         mov es, di
 
-        jmp .load_loop
+        jmp .read_table
 
     .read_finish:
         mov dl, [DriveNumber]
@@ -255,8 +256,8 @@ section .data
         .segment:   dw 0
         .lba:       dq 0
 
-    global stage2_location
-    stage2_location:times 30 db 0
+    global table_location
+    table_location:          times 20 db 0
 
 section .bss
     buf:            resb 512

@@ -1,0 +1,2 @@
+select vdisk file="C:\Users\tpc\Desktop\codes\osdev\build\os_image.vhd"
+detach vdisk

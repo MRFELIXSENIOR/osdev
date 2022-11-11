@@ -1,5 +1,4 @@
 #include "mbr.h"
-#include "boot/bootloader/gtdef.h"
 #include "libc/memory.h"
 
 #define HARD_DRV 0x80
@@ -11,7 +10,7 @@ typedef struct {
     byte lastPartitionSector[3];
     dword partitionLBA;
     dword size;
-} PACKED MBRPartitionEntry;
+} __attribute__((packed)) MBRPartitionEntry;
 
 void MBRCheckPartition(Partition* part, DISK* disk, void* partitionEntry) {
     part->disk = disk;

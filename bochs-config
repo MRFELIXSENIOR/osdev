@@ -1,5 +1,4 @@
 megs: 128
-floppya: 1_44=os.img, status=inserted
-boot: floppy
+boot: disk
 mouse: enabled=0
-display_library: rfb, options="debug"
+ata0-master: type=disk, path="build/os_image.raw", heads=32, spt=63

@@ -1,0 +1,5 @@
+create vdisk file="C:\Users\tpc\Desktop\codes\osdev\build\os_image.vhd" maximum=24 type=fixed
+attach vdisk
+create partition primary
+format fs=fat label="gatOS_Drive"
+assign letter=Z
