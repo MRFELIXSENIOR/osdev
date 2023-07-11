@@ -1,1 +1,2 @@
-hobby os project wip named (gatOS)
+hobby os project (gatOS)
+# Permanently delayed!!!11
